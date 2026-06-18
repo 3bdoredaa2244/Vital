@@ -1,0 +1,28 @@
+{
+  "name": "vital",
+  "version": "0.1.0",
+  "private": true,
+  "description": "VITAL — Preventive Health Intelligence Platform (Phase 1)",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "dev:api": "pnpm --filter @vital/api dev",
+    "dev:mobile": "pnpm --filter @vital/mobile start",
+    "db:generate": "pnpm --filter @vital/api db:generate",
+    "db:migrate": "pnpm --filter @vital/api db:migrate",
+    "db:seed": "pnpm --filter @vital/api db:seed"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "react-native-css-interop": "0.1.22"
+    }
+  }
+}

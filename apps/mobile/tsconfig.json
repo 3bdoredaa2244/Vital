@@ -1,0 +1,39 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-native",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "types": [
+      "react",
+      "expo"
+    ],
+    "allowJs": true,
+    "noEmit": true,
+    "paths": {
+      "@/*": [
+        "./*"
+      ],
+      "@vital/shared": [
+        "../../packages/shared/src/index.ts"
+      ],
+      "@vital/shared/*": [
+        "../../packages/shared/src/*"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts",
+    "nativewind-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

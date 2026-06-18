@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Next.js (admin)
+.next/
+apps/admin/.next/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Expo
+.expo/
+.expo-shared/
+apps/mobile/.expo/
+web-build/
+
+# Logs
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Drizzle
+apps/api/drizzle/meta/_journal.json.bak
+
+# Misc
+coverage/
+*.local

@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Bricolage Grotesque', Georgia, serif;
+}
+
+html,
+body {
+  background: #fbf6ec;
+  color: #20201c;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}

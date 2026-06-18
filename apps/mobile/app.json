@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "VITAL",
+    "slug": "vital",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "vital",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FBF6EC"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.vital.mobile"
+    },
+    "android": {
+      "package": "app.vital.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FBF6EC"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-notifications",
+      ["expo-font", { "fonts": ["./assets/fonts/BricolageGrotesque.ttf", "./assets/fonts/Inter.ttf"] }]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
