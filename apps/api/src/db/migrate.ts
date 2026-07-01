@@ -8,7 +8,9 @@ import postgres from 'postgres';
 import { env } from '../lib/env.js';
 
 async function main() {
-  const migrationClient = postgres(env.DATABASE_URL, { max: 1 });
+  // `prepare: false` matches the runtime client — required for Supabase's
+  // transaction pooler (pgbouncer/Supavisor), which rejects prepared statements.
+  const migrationClient = postgres(env.DATABASE_URL, { max: 1, prepare: false });
   const db = drizzle(migrationClient);
   console.log('Running migrations…');
   await migrate(db, { migrationsFolder: './src/db/migrations' });
