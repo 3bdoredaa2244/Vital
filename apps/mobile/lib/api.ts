@@ -74,13 +74,31 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
     if (token) headers.Authorization = `Bearer ${token}`;
   }
 
-  const res = await fetch(url.toString(), {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  // [VITAL DEBUG] — temporary instrumentation. Remove before shipping.
+  console.log('[VITAL DEBUG] request →', method, url.toString());
+  console.log('[VITAL DEBUG] BASE_URL =', BASE_URL);
+  console.log('[VITAL DEBUG] body =', body !== undefined ? JSON.stringify(body) : '(none)');
+
+  let res: Response;
+  try {
+    res = await fetch(url.toString(), {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  } catch (networkErr) {
+    // fetch() rejects on transport failure (unreachable host, DNS, cleartext
+    // blocked). This is NOT an ApiError, which is why the UI shows its generic
+    // fallback message.
+    console.log('[VITAL DEBUG] fetch THREW (network error):', String(networkErr));
+    console.log('[VITAL DEBUG] error name:', (networkErr as Error)?.name);
+    console.log('[VITAL DEBUG] error stack:', (networkErr as Error)?.stack);
+    throw networkErr;
+  }
 
   const text = await res.text();
+  console.log('[VITAL DEBUG] response status =', res.status);
+  console.log('[VITAL DEBUG] response body =', text || '(empty)');
   const data = text ? JSON.parse(text) : null;
 
   if (!res.ok) {

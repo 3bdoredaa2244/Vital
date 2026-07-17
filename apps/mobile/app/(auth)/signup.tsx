@@ -48,6 +48,10 @@ export default function SignUp() {
       }
       router.replace('/(auth)/health-profile');
     } catch (err) {
+      // [VITAL DEBUG] — temporary. Surfaces the true error behind the toast.
+      console.log('[VITAL DEBUG] signup caught:', err instanceof ApiError ? 'ApiError' : 'non-ApiError');
+      console.log('[VITAL DEBUG] name/message:', (err as Error)?.name, (err as Error)?.message);
+      console.log('[VITAL DEBUG] stack:', (err as Error)?.stack);
       const message = err instanceof ApiError ? err.message : 'Could not create account';
       toast.error(message);
     } finally {
