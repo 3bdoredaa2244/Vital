@@ -144,3 +144,5 @@ admin (Bearer + admin role, under /api/v1):
 Out of scope (future phases): AI coaching, composite health scores, lab API
 import, push notifications, enterprise dashboards, imaging, genetics, supplement
 store.
+
+AbdulRahamn Redaa Fahmy
