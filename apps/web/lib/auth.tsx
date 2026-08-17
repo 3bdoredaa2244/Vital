@@ -1,0 +1,209 @@
+'use client';
+
+/**
+ * Web session management for the VITAL user client.
+ *
+ * This is the browser equivalent of `apps/mobile/lib/store/auth.ts` +
+ * `apps/mobile/lib/auth.ts`, using exactly the same mechanism: the API issues a
+ * Supabase access token via /auth/login (or /auth/signup), we persist it, and
+ * we send it as `Authorization: Bearer` on every request. The web app holds no
+ * Supabase credential of its own and never talks to the database directly.
+ *
+ * It also caches the user's subscription, because nearly every data route in
+ * the API sits behind `requireActiveSubscription` — pages need to know whether
+ * to render data or the locked state.
+ */
+import type { SubscriptionWithPlan, User } from '@vital/shared';
+import { useRouter } from 'next/navigation';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
+
+import {
+  ApiError,
+  authApi,
+  clearSession,
+  getToken,
+  setSession,
+  setUnauthorizedHandler,
+  subscriptionApi,
+  userApi,
+} from './api';
+
+type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
+
+interface AuthState {
+  user: User | null;
+  status: AuthStatus;
+  subscription: SubscriptionWithPlan | null;
+  subscriptionLoaded: boolean;
+  /** True when the user may access the subscription-gated parts of the API. */
+  hasActiveSubscription: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  /**
+   * Creates the account. Returns `needsEmailConfirmation: true` when the API
+   * created the user but Supabase withheld a session pending email
+   * confirmation — the caller should send the user to sign in rather than
+   * pretending they're logged in.
+   */
+  signup: (input: {
+    full_name: string;
+    email: string;
+    password: string;
+    phone: string;
+    accepted_terms: true;
+  }) => Promise<{ needsEmailConfirmation: boolean }>;
+  logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
+  refreshSubscription: () => Promise<void>;
+  /** Replaces the cached user after a profile mutation. */
+  setUser: (user: User) => void;
+}
+
+const AuthContext = createContext<AuthState | null>(null);
+
+function isActive(sub: SubscriptionWithPlan | null): boolean {
+  return !!sub && sub.status === 'active' && new Date(sub.expires_at) > new Date();
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const [user, setUserState] = useState<User | null>(null);
+  const [status, setStatus] = useState<AuthStatus>('loading');
+  const [subscription, setSubscription] = useState<SubscriptionWithPlan | null>(null);
+  const [subscriptionLoaded, setSubscriptionLoaded] = useState(false);
+  const hydrated = useRef(false);
+
+  const resetLocal = useCallback(() => {
+    setUserState(null);
+    setSubscription(null);
+    setSubscriptionLoaded(false);
+    setStatus('unauthenticated');
+  }, []);
+
+  // A 401 anywhere in the app means the token is dead — drop to /login.
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      resetLocal();
+      router.replace('/login');
+    });
+    return () => setUnauthorizedHandler(null);
+  }, [resetLocal, router]);
+
+  const loadSubscription = useCallback(async () => {
+    try {
+      const { subscription: sub } = await subscriptionApi.mine();
+      setSubscription(sub);
+    } catch {
+      // A failure here must not lock the user out of the app; it only means we
+      // can't confirm a subscription, which the gated pages surface themselves.
+      setSubscription(null);
+    } finally {
+      setSubscriptionLoaded(true);
+    }
+  }, []);
+
+  // Restore the session on first mount (the "stay logged in" behaviour).
+  useEffect(() => {
+    if (hydrated.current) return;
+    hydrated.current = true;
+
+    const token = getToken();
+    if (!token) {
+      setStatus('unauthenticated');
+      return;
+    }
+    (async () => {
+      try {
+        const { user: me } = await userApi.me();
+        setUserState(me);
+        setStatus('authenticated');
+        void loadSubscription();
+      } catch {
+        clearSession();
+        resetLocal();
+      }
+    })();
+  }, [loadSubscription, resetLocal]);
+
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const res = await authApi.login({ email, password });
+      setSession(res.access_token, res.refresh_token);
+      const { user: me } = await userApi.me();
+      setUserState(me);
+      setStatus('authenticated');
+      void loadSubscription();
+    },
+    [loadSubscription],
+  );
+
+  const signup = useCallback<AuthState['signup']>(
+    async (input) => {
+      const res = await authApi.signup(input);
+
+      // The API returns 201 with a null token when the Supabase project has
+      // email confirmation enabled. Treat that as a real outcome instead of
+      // silently landing the user in a signed-out app.
+      if (!res.access_token) {
+        return { needsEmailConfirmation: true };
+      }
+
+      setSession(res.access_token, res.refresh_token);
+      setUserState(res.user);
+      setStatus('authenticated');
+      void loadSubscription();
+      return { needsEmailConfirmation: false };
+    },
+    [loadSubscription],
+  );
+
+  const logout = useCallback(async () => {
+    await authApi.logout().catch(() => undefined);
+    clearSession();
+    resetLocal();
+    router.replace('/login');
+  }, [resetLocal, router]);
+
+  const refreshUser = useCallback(async () => {
+    try {
+      const { user: me } = await userApi.me();
+      setUserState(me);
+    } catch (err) {
+      // Keep the stale user on transient errors, exactly as mobile does.
+      if (err instanceof ApiError && err.kind === 'auth') resetLocal();
+    }
+  }, [resetLocal]);
+
+  const value = useMemo<AuthState>(
+    () => ({
+      user,
+      status,
+      subscription,
+      subscriptionLoaded,
+      hasActiveSubscription: isActive(subscription),
+      login,
+      signup,
+      logout,
+      refreshUser,
+      refreshSubscription: loadSubscription,
+      setUser: setUserState,
+    }),
+    [user, status, subscription, subscriptionLoaded, login, signup, logout, refreshUser, loadSubscription],
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth(): AuthState {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
+}
