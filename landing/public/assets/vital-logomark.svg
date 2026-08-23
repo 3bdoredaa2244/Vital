@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" width="44" height="44" role="img" aria-label="VITAL">
+  <!--
+    PLACEHOLDER logomark. index.tsx references /assets/vital-logomark.svg but no
+    asset was supplied, so this stands in using the existing VITAL ring motif
+    and palette (canvas #FBF6EC, line #E7DECC, accent #C2603C). Replace this
+    file with the real brand mark — no code change is required.
+  -->
+  <circle cx="22" cy="22" r="19" fill="#FBF6EC" />
+  <circle cx="22" cy="22" r="19" fill="none" stroke="#E7DECC" stroke-width="3.5" />
+  <path
+    d="M 22 3 A 19 19 0 0 1 38.45 31.5"
+    fill="none"
+    stroke="#C2603C"
+    stroke-width="3.5"
+    stroke-linecap="round"
+  />
+  <circle cx="22" cy="22" r="6.5" fill="#C2603C" />
+</svg>

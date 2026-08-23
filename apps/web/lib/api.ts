@@ -141,9 +141,16 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   }
 
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  // Track whether we actually presented credentials: a 401 only means "your
+  // session is dead" if we sent a token. A 401 from an endpoint we called
+  // anonymously says nothing about our session and must not sign the user out.
+  let sentToken = false;
   if (auth) {
     const token = getToken();
-    if (token) headers.Authorization = `Bearer ${token}`;
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+      sentToken = true;
+    }
   }
 
   let res: Response;
@@ -191,7 +198,7 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
       console.error('[VITAL] api error', res.status, code, message, env?.error?.details);
     }
 
-    if (kind === 'auth') {
+    if (kind === 'auth' && sentToken) {
       clearSession();
       onUnauthorized?.();
     }

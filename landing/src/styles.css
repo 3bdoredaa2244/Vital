@@ -1,0 +1,57 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:where([data-theme="default-dark"], [data-theme="default-dark"] *));
+
+/*
+ * VITAL landing page styles.
+ *
+ * Originally generated against Higgsfield's private "Quanta" design system.
+ * @higgsfield/quanta is not published to npm (E404), so its Tailwind entry and
+ * `--hf-*` custom properties are unavailable here. The landing page itself
+ * never referenced a single Quanta token — every colour in index.tsx is a
+ * literal hex arbitrary value — so the Quanta imports have been dropped and the
+ * four `--hf-*` values the base layer actually consumed are inlined below with
+ * the exact VITAL values the page already uses. Visual output is unchanged.
+ *
+ * The radius scale below is deliberately preserved: it overrides Tailwind's
+ * defaults (rounded-lg becomes 0.625rem rather than 0.5rem), and the landing
+ * page's buttons and cards depend on it.
+ */
+@theme {
+  --spacing: 0.25rem;
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+}
+
+:root {
+  --radius: 0.625rem;
+}
+
+@layer base {
+  html {
+    background-color: #FBF6EC;
+    color: #20201C;
+    color-scheme: light;
+  }
+
+  body {
+    min-height: 100vh;
+    background-color: #FBF6EC;
+    color: #20201C;
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  }
+
+  * {
+    border-color: #E7DECC;
+  }
+}

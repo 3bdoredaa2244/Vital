@@ -73,6 +73,34 @@ function isActive(sub: SubscriptionWithPlan | null): boolean {
   return !!sub && sub.status === 'active' && new Date(sub.expires_at) > new Date();
 }
 
+/**
+ * Supabase returns the result of an email confirmation as a URL *fragment* on
+ * its configured Site URL (http://localhost:3003), e.g.
+ *
+ *   http://localhost:3003/#access_token=…&refresh_token=…&type=signup
+ *   http://localhost:3003/#error=access_denied&error_description=Email+link+…
+ *
+ * The fragment never reaches the server, so it has to be read here on mount.
+ * Without this the tokens are silently discarded and a user who just confirmed
+ * their email is bounced to /login as if nothing happened.
+ */
+function readAuthFragment(): { accessToken?: string; refreshToken?: string; error?: string } | null {
+  if (typeof window === 'undefined') return null;
+  const hash = window.location.hash;
+  if (hash.length < 2) return null;
+
+  const params = new URLSearchParams(hash.slice(1));
+  const accessToken = params.get('access_token');
+  const error = params.get('error_description') ?? params.get('error');
+  if (!accessToken && !error) return null;
+
+  return {
+    accessToken: accessToken ?? undefined,
+    refreshToken: params.get('refresh_token') ?? undefined,
+    error: error ?? undefined,
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [user, setUserState] = useState<User | null>(null);
@@ -110,10 +138,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Restore the session on first mount (the "stay logged in" behaviour).
+  // Restore the session on first mount (the "stay logged in" behaviour), after
+  // adopting any session Supabase handed back via the email-confirmation
+  // redirect.
   useEffect(() => {
     if (hydrated.current) return;
     hydrated.current = true;
+
+    const fragment = readAuthFragment();
+    if (fragment) {
+      // Strip the tokens from the address bar before anything else, so they
+      // don't linger in history or get copied out of the URL.
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+
+      if (fragment.accessToken) {
+        setSession(fragment.accessToken, fragment.refreshToken ?? null);
+      } else if (process.env.NODE_ENV !== 'production') {
+        // Expired or already-used confirmation link. Falling through leaves the
+        // user on /login, which is where they need to be anyway.
+        console.error('[VITAL] email confirmation failed:', fragment.error);
+      }
+    }
 
     const token = getToken();
     if (!token) {
