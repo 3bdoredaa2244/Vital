@@ -18,6 +18,8 @@
     "db:seed": "pnpm --filter @vital/api db:seed"
   },
   "devDependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
     "typescript": "^5.6.3"
   },
   "pnpm": {
